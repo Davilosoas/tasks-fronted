@@ -1,0 +1,16 @@
+/* CSS Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 62.5%; /* Define a base de 10px para 1rem (1rem = 10px) */
+}
+
+body {
+  font-size: 1.6rem; /* Define a fonte padrão como 16px */
+  font-family: Arial, sans-serif; /* Define a fonte padrão como Arial ou uma fonte sans-serif */
+  line-height: 1.5;
+}
