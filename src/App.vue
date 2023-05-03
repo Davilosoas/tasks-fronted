@@ -2,84 +2,194 @@
   <div id="app">
     <h1 class='title' >Lista de Tarefas</h1>
     <div style="display:flex; justify-content: center; margin-bottom: 40px;">
-      <input type="text"  v-model="newList" placeholder="Adicione uma tarefa" style="padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 16px; width: 300px">
-      <button class="add" @click="addTask" style="margin-left: 10px; padding: 10px 20px; border-radius: 5px;  font-size: 16px">Adicionar</button>
+      <input type="text"  class="inputAddList" v-model="newList" placeholder="Adicione uma tarefa" style="padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 16px; width: 300px">
+      <button class="add" @click="createList" style="margin-left: 10px; padding: 10px 20px; border-radius: 5px;  font-size: 16px">Adicionar</button>
     </div>
-    <ul class='task-list'   v-for="(list, index) in lists" :key="index">
-      <li @click="list.showOptions = !list.showOptions" class='task'  style="display:flex; justify-content: space-between; align-items: center; padding: 10px; margin-bottom: 10px; background-color: #f2f2f2; border-radius: 5px">
+    <ul class='task-list'   v-for="(list, index) in lists" :key="lists.description">
+      <div v-if="showEditList == list.id" :key="lists.description" class="list">
+        <input type="text"  v-model="newListName" placeholder="Escolha o novo nome da lista!" style="padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 16px; width: 300px">
+        <div>
+          <button class="edit"   @click="renameList(list.id)" style="padding: 5px 10px; border-radius: 5px; margin-right: 7px; " >Editar</button>
+          <button class="delete" @click="changeShowEditList(list.id)" style="padding: 5px 10px; border-radius: 5px;  color: white; ">Cancelar</button>
+
+        </div>
+       
+      </div>
+      <li v-if="showEditList !== list.id" @click="selectList(list.id)" class="list"  >
         <span   style="font-size: 16px; cursor: pointer">{{ list.description }}</span>
         <div>
-        <button class="add-task" @click="list.showAdd = !list.showAdd" style="font-size: 13px; padding: 5px 10px;">+</button>
-        <button class="delete" @click="deleteTask(index)" style="padding: 5px 10px; border-radius: 5px; background-color: #f44336; color: white; font-size: 16px">Excluir</button>
+        <button class="add-task" @click="changeShowEditList(list.id)" style="padding: 5px 10px; border-radius: 5px; margin-right: 7px; ">Editar</button>
+        <button class="add-task" @click="changeShowAdd(list.id)" style="font-size: 13px; padding: 5px 10px; margin-right: 6px;">+</button>
+        <button class="delete" @click="deleteList(list.id)" style="padding: 5px 10px; border-radius: 5px;  color: white;">Excluir</button>
         </div>
-        <form>
-          <input type="text"  v-model="list.description" placeholder="Descrição" style="padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 16px; width: 300px">
-          <button class="update" @click="updateTask(index)" style="margin-left: 10px; padding: 10px 20px; border-radius: 5px;  font-size: 16px">Atualizar</button>
-        </form>
+        
       </li>
-      <ul v-if=" (typeof list.tasks.description) == 'string' && list.showOptions == true " >
-        <li class="task" style="display:flex; justify-content: space-between; align-items: center; padding: 10px; margin-bottom: 10px; background-color: #f2f2f2; border-radius: 5px">
-          <span   style="font-size: 16px; cursor: pointer">{{ list.tasks.description }}</span>
-          <button class="delete" @click="deleteTask(index)" style="padding: 5px 10px; border-radius: 5px; background-color: #f44336; color: white; font-size: 16px">Excluir</button>
-        </li>
+      <form v-if="showAdd == list.id && showEditList == null" class="task">
+          <input type="text"  v-model="newTask" placeholder="Descrição" style="padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 16px; width: 300px">
+          <button @click="createTask()" class="add"  style="margin-left: 10px; padding: 10px 20px; border-radius: 5px;  font-size: 16px">adicionar</button>
+        </form>
+      <ul v-if="selectedList == list.id && showEditList == null && showAdd == null" >
+        <div v-for="(task) in filteredTasks(list.id)" :key="tasks.completed">
+          <div v-if="showEditTask !== task.id" class="task" style="display:flex; justify-content: space-between; align-items: center; padding: 10px; margin-bottom: 10px;  border-radius: 5px">
+            <span  @click="completeTask(task.task_list_id, task.id)" :class="{'completed' : task.completed}" style="font-size: 16px; cursor: pointer;"  >{{ task.description }}</span>
+            <div>
+              <button class="add-task" @click="changeShowEditTask(task.id)" style="padding: 5px 10px; border-radius: 5px; margin-right: 7px; " >Editar</button>
+              <button class="delete" @click="deleteTask(task.task_list_id, task.id)" style="padding: 5px 10px; border-radius: 5px;  color: white;">Excluir</button>
+            </div>
+           
+
+          </div>
+          <div v-if="showEditTask == task.id" class="task">
+            <input type="text"  v-model="newTaskName" placeholder="Escolha o novo nome da tarefa!" style="padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 16px; width: 300px">
+            <div>
+              <button class="edit"   @click="renameTask(task.task_list_id, task.id)" style="padding: 5px 10px; border-radius: 5px;  margin-right: 7px;">Editar</button>
+              
+              <button class="delete" @click="changeShowEditTask(list.id)" style="padding: 5px 10px; border-radius: 5px;  color: white;" >Cancelar</button>
+
+            </div>
+
+          </div>
+        </div>
       </ul>
     </ul>
-    <button @click="consol()">dasds</button>
   </div>
 </template>
 
 <script>
 import axios from 'axios';
+import { get } from 'lodash'
 export default {
   name: 'App',
   data() {
     return {
       newList: '',
       newTask: '',
+      newListName: '',
+      newTaskName: '',
       lists: [],
       tasks: [],
-      showOptions: 1
-
+      selectedList: null,
+      showAdd: null,
+      showEditList: null,
+      showAddTask: null,
+      showEditTask: null,
     }
   },
+  computed: {
+    filteredTasks() {
+      return function(listId) {
+        return this.tasks.filter(task => task.task_list_id == listId);
+      }
+    }
+  },
+
   methods: {
-    getTasks(){
-      axios.get('http://127.0.0.1:8000/api/tasks')
+    changeShowEditTask(task_id) {
+      this.showEditTask !== task_id? this.showEditTask = task_id : this.showEditTask = null;
+    },
+    changeShowEditList(list_id) {
+      this.showEditList !== list_id? this.showEditList = list_id : this.showEditList = null;
+    },
+    changeShowAdd(list_id) {
+      this.showAdd !== list_id? this.showAdd = list_id : this.showAdd = null
+      console.log(this.showAdd)
+    },
+
+    selectList(list_id) {
+      this.selectedList !== list_id? this.selectedList = list_id : this.selectedList = null
+      console.log(this.selectedList)
+    },
+    getList(){
+      axios.get('http://127.0.0.1:8000/api/list')
       .then(response => {
-          response.data.map((list) => { 
-          list.tasks =  JSON.parse(list.tasks)
-          list.showOptions = false
-          list.showAdd = false
-          console.log(typeof list.tasks); 
-          })
-          this.lists = response.data;
+
+          this.lists = response.data.lists;
           this.tasks = response.data.tasks;
+          console.log(response)
+          console.log('lists: ' + this.lists)
+          console.log('tasks:'+ this.tasks)
         })
       .catch(error => {
           console.log(error);
         });
     },
-    addTask() {
-      axios.post('http://127.0.0.1:8000/api/tasks', {})
+    createList() {
+      axios.post('http://127.0.0.1:8000/api/list/create', {description: this.newList})
       .then(response => {
-          response.data.map((list) => { 
-          list.tasks =  JSON.parse(list.tasks)
-          list.showOptions = false
-          console.log(typeof list.tasks); 
-          })
-          this.lists = response.data;
+          
+          
+          this.lists = response.data.lists;
+
           this.tasks = response.data.tasks;
+          console.log( this.lists, reponse.data.lists)
         })
       .catch(error => {
           console.log(error);
         });
     },
-    completeTask(index) {
-      this.tasks[index].completed = !this.tasks[index].completed;
+    renameList(list_id) {
+      axios.put('http://127.0.0.1:8000/api/list/rename', { description: this.newListName, id: list_id })
+      .then(response => {
+        this.lists = response.data.lists;
+        this.showEditList = null;
+       })
+      .catch(error => {
+        console.log(error);
+      });
     },
-    deleteTask(index) {
-      this.tasks.splice(index, 1);
+    deleteList(list_id) {
+      axios.delete('http://127.0.0.1:8000/api/list/delete', { data : {id: list_id }})
+    .then(response => {
+      this.lists = response.data.lists;
+      this.tasks = response.data.tasks;
+      console.log(list_id)
+      })
+   .catch(error => {
+    console.log(error);
+    });
     },
+
+    completeTask(list_id, task_id) {
+      axios.put('http://127.0.0.1:8000/api/task/status', {  task_list_id: list_id, id: task_id })
+      .then(response => {
+        this.tasks = response.data.tasks;
+        console.log(this.tasks)
+      })
+      
+    },
+    createTask() {
+      console.log(this.newTask),
+      axios.post('http://127.0.0.1:8000/api/task/create', { description: this.newTask, id: this.showAdd })
+      .then(response => {
+       
+          this.lists = response.data.lists;
+          this.tasks = response.data.tasks;
+        })
+     .catch(error => {
+      console.log(error);
+      });
+    },
+    renameTask(list_id, task_id) {
+      axios.put('http://127.0.0.1:8000/api/task/rename', { description: this.newTaskName, task_list_id: list_id ,id: task_id })
+     .then(response => {
+      this.tasks = response.data.tasks;
+      this.changeShowEditTask(task_id);
+      })
+      .catch(error => {
+      console.log(error);
+      });
+    },
+
+    deleteTask(list_id, task_id) {
+      axios.delete('http://127.0.0.1:8000/api/task/delete', { data: {task_list_id: list_id, id: task_id }})
+      .then(response => {
+        this.tasks = response.data.tasks;
+       })
+      .catch(error => {
+        console.log(error);
+      });
+      },
+ 
     consol(){
       console.log(this.lists);
     }
@@ -87,7 +197,7 @@ export default {
     
   },
   created(){
-    this.getTasks()
+    this.getList()
   }
 }
 </script>
@@ -102,6 +212,10 @@ export default {
   color: #39bda7;
 }
 
+.inputAddList {
+  border-color: #ff0101;
+  border-width: 200px;
+}
 .completed {
   text-decoration: line-through;
   text-decoration-color: #190974;
@@ -123,10 +237,22 @@ export default {
 
 }
 
-.task {
+.task, .list {
   width: 80vw;
+  display:flex;
+  justify-content: space-between;
+  align-items: center; 
+  padding: 10px; 
+  margin-bottom: 10px;
+  border-radius: 5px;
 }
 
+.task {
+  background-color: #d5f3e7;
+}
+.list {
+  background-color: #c7dfe6;
+}
 .add {
  display: inline-block;
  padding: 12px 24px;
